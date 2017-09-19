@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------
-// Xuanyi . Refer to Dong Jian
-// 2016/03/31
+//Jiang Jia'nan . Refer to Dong Jian
+// 2017/09/19
 // ------------------------------------------------------------------
 #ifndef CAFFE_FRCNN_PROPOSAL_TARGET_LAYER_HPP_
 #define CAFFE_FRCNN_PROPOSAL_TARGET_LAYER_HPP_
@@ -65,6 +65,7 @@ class FrcnnProposalTargetLayer : public Layer<Dtype> {
         const vector<int> &gt_label, const int fg_rois_per_image, const int rois_per_image, vector<int> &labels,
         vector<Point4f<Dtype> > &rois, vector<vector<Point4f<Dtype> > > &bbox_targets, vector<vector<Point4f<Dtype> > > &bbox_inside_weights);
   int config_n_classes_;
+  bool agnostic;
   shared_ptr<Caffe::RNG> rng_;
   int _count_;
   int _fg_num_;
