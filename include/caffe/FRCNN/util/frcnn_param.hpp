@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------
-// Xuanyi . Refer to Dong Jian
-// 2016/03/31
+//Jiang Jia'nan . Refer to Dong Jian
+// 2017/09/19
 // ------------------------------------------------------------------
 #ifndef CAFFE_FRCNN_PRARM_HPP_
 #define CAFFE_FRCNN_PRARM_HPP_
@@ -38,6 +38,12 @@ public:
   static float bbox_inside_weights[4];
   static float bbox_normalize_means[4];
   static float bbox_normalize_stds[4];
+
+  static bool rpn_normalize_targets;
+  static float rpn_normalize_means[4];
+  static float rpn_normalize_stds[4];
+
+  static bool agnostic;
 
   // RPN to detect objects
   static float rpn_positive_overlap;
