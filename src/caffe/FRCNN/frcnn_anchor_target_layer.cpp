@@ -228,11 +228,24 @@ void FrcnnAnchorTargetLayer<Dtype>::Forward_cpu(
 
   DLOG(ERROR) << "========== transfer bbox";
   vector<Point4f<Dtype> > bbox_targets;
+  Point4f<Dtype> bbox_targets_data;
+
+  bool rpn_normalize_targets = FrcnnParam::rpn_normalize_targets;
+  Point4f<Dtype> rpn_normalize_means = FrcnnParam::rpn_normalize_means;
+  Point4f<Dtype> rpn_normalize_stds = FrcnnParam::rpn_normalize_stds;
+  if (!rpn_normalize_targets){
+    Point4f<Dtype> rpn_normalize_means = {0.0 , 0.0 , 0.0 , 0.0};
+    Point4f<Dtype> rpn_normalize_stds = {1.0, 1.0, 1.0, 1.0};}
+
   for (int i =0; i < argmax_overlaps.size(); i++) {
     if (argmax_overlaps[i] < 0 )
       bbox_targets.push_back(Point4f<Dtype>());
     else 
-      bbox_targets.push_back( bbox_transform(anchors[i], gt_boxes[argmax_overlaps[i]] ) );
+      bbox_targets_data = bbox_transform(anchors[i], gt_boxes[argmax_overlaps[i]] );
+      for (int j = 0; j < 4; j ++) {
+        bbox_targets_data[j] = (bbox_targets_data[j]-rpn_normalize_means[j]) / rpn_normalize_stds[j];
+      }
+      bbox_targets.push_back(bbox_targets_data);
   }
 
   vector<Point4f<Dtype> > bbox_inside_weights(n_anchors, Point4f<Dtype>());
