@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------
-// Xuanyi . Refer to Dong Jian
-// 2016/03/31
+//Jiang Jia'nan . Refer to Dong Jian
+// 2017/09/19
 // ------------------------------------------------------------------
 #ifndef CAFFE_FRCNN_PROPOSAL_TARGET_LAYER_HPP_
 #define CAFFE_FRCNN_PROPOSAL_TARGET_LAYER_HPP_
