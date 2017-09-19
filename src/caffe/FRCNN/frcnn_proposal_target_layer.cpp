@@ -12,6 +12,8 @@ namespace caffe {
 namespace Frcnn {
 
 using std::vector;
+using std::cout;
+using std::endl;
 
 template <typename Dtype>
 void FrcnnProposalTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom,
@@ -20,6 +22,9 @@ void FrcnnProposalTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bo
   this->_count_ = this->_bg_num_ = this->_fg_num_ = 0;
 
   config_n_classes_ = FrcnnParam::n_classes;
+  agnostic = FrcnnParam::agnostic;
+  if(agnostic){config_n_classes_=2;}
+
 
   LOG(INFO) << "FrcnnProposalTargetLayer :: " << config_n_classes_ << " classes";
   LOG(INFO) << "FrcnnProposalTargetLayer :: LayerSetUp";
@@ -98,11 +103,17 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
     label_data[ top[1]->offset(i,0,0,0) ] = labels[i];
   }
   // bbox_targets
+
+//  if (agnostic) {top[2]->Reshape(batch_size, 2*4, 1, 1);}
+//  else {top[2]->Reshape(batch_size, this->config_n_classes_*4, 1, 1);}
   top[2]->Reshape(batch_size, this->config_n_classes_*4, 1, 1);
+
   caffe_set(top[2]->count(), Dtype(0), top[2]->mutable_cpu_data());
   Dtype *target_data = top[2]->mutable_cpu_data();
   // bbox_inside_weights and bbox_outside_weights
-  top[3]->Reshape(batch_size, this->config_n_classes_*4, 1, 1); //bbox_inside_weights
+  if (agnostic){top[3]->Reshape(batch_size, 8, 1, 1);}
+  else {top[3]->Reshape(batch_size, this->config_n_classes_*4, 1, 1);}
+   //bbox_inside_weights
   caffe_set(top[3]->count(), Dtype(0), top[3]->mutable_cpu_data());
   Dtype *bbox_inside_data = top[3]->mutable_cpu_data();
   top[4]->Reshape(batch_size, this->config_n_classes_*4, 1, 1); //bbox_outside_weights
@@ -132,14 +143,14 @@ void FrcnnProposalTargetLayer<Dtype>::Backward_cpu(
 }
 
 template <typename Dtype>
-void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> > &all_rois, const vector<Point4f<Dtype> > &gt_boxes, 
-        const vector<int> &gt_label, const int fg_rois_per_image, const int rois_per_image, vector<int> &labels, 
+void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> > &all_rois, const vector<Point4f<Dtype> > &gt_boxes,
+        const vector<int> &gt_label, const int fg_rois_per_image, const int rois_per_image, vector<int> &labels,
         vector<Point4f<Dtype> > &rois, vector<vector<Point4f<Dtype> > > &bbox_targets, vector<vector<Point4f<Dtype> > > &bbox_inside_weights) {
 // Generate a random sample of RoIs comprising foreground and background examples.
 
   CHECK_EQ(gt_label.size(), gt_boxes.size());
   // overlaps: (rois x gt_boxes)
-  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes); 
+  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes);
   std::vector<Dtype> max_overlaps(all_rois.size(), 0);
   std::vector<int> gt_assignment(all_rois.size(), -1);
   std::vector<int> _labels(all_rois.size());
@@ -147,7 +158,7 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
     for (int j = 0; j < gt_boxes.size(); ++ j) {
       if (max_overlaps[i] <= overlaps[i][j]) {
         max_overlaps[i] = overlaps[i][j];
-        gt_assignment[i] = j;       
+        gt_assignment[i] = j;
       }
     }
   }
@@ -160,7 +171,7 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
       _labels[i] = 0;
     }
   }
-  
+
   // Select foreground RoIs as those with >= FG_THRESH overlap
   std::vector<int> fg_inds;
   for (int i = 0; i < all_rois.size(); ++i) {
@@ -177,11 +188,11 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
     shuffle(fg_inds.begin(), fg_inds.end(), (caffe::rng_t *) this->rng_->generator());
     fg_inds.resize(fg_rois_per_this_image);
   }
-  
+
   // Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
   std::vector<int> bg_inds;
   for (int i = 0; i < all_rois.size(); ++i) {
-    if (max_overlaps[i] >= FrcnnParam::bg_thresh_lo 
+    if (max_overlaps[i] >= FrcnnParam::bg_thresh_lo
         && max_overlaps[i] < FrcnnParam::bg_thresh_hi) {
       bg_inds.push_back(i);
     }
@@ -208,7 +219,7 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
     _gt_boxes[i] =
         gt_assignment[keep_inds[i]] >= 0 ? gt_boxes[gt_assignment[keep_inds[i]]] : Point4f<Dtype>();
     // Clamp labels for the background RoIs to 0
-    if ( i >= fg_rois_per_this_image ) 
+    if ( i >= fg_rois_per_this_image )
         labels[i] = 0;
   }
 
@@ -242,13 +253,19 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
     }
   }
 
-  // Compute boxes target 
+  // Compute boxes target
   bbox_targets = std::vector<std::vector<Point4f<Dtype> > >(
           keep_inds.size(), std::vector<Point4f<Dtype> >(this->config_n_classes_));
   bbox_inside_weights = std::vector<std::vector<Point4f<Dtype> > >(
           keep_inds.size(), std::vector<Point4f<Dtype> >(this->config_n_classes_));
+
   for (size_t i = 0; i < labels.size(); ++i) if (labels[i] > 0) {
     int cls = labels[i];
+    if (agnostic) {
+      if (cls>0) {cls = 1;}
+      else {cls = 0;}
+    }
+    else {cls = cls;}
     //get bbox_targets and bbox_inside_weights
     bbox_targets[i][cls] = bbox_targets_data[i];
     bbox_inside_weights[i][cls] = Point4f<Dtype>(FrcnnParam::bbox_inside_weights);
