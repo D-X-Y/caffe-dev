@@ -65,6 +65,7 @@ class FrcnnProposalTargetLayer : public Layer<Dtype> {
         const vector<int> &gt_label, const int fg_rois_per_image, const int rois_per_image, vector<int> &labels,
         vector<Point4f<Dtype> > &rois, vector<vector<Point4f<Dtype> > > &bbox_targets, vector<vector<Point4f<Dtype> > > &bbox_inside_weights);
   int config_n_classes_;
+  bool agnostic;
   shared_ptr<Caffe::RNG> rng_;
   int _count_;
   int _fg_num_;
