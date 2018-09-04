@@ -1,3 +1,5 @@
+# caffe-faster-rcnn has been deprecated. Please see [Detectron](https://github.com/facebookresearch/Detectron), which includes an implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870).
+
 **Special Feature for This Caffe Repository**
 
 - Clone from the official [Caffe](https://github.com/BVLC/caffe), will continuely be up-to-date by the official caffe code
