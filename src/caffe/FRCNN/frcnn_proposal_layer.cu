@@ -4,7 +4,6 @@
 // Licensed under The MIT License [see fast-rcnn/LICENSE for details]
 // Written by Ross Girshick
 // ------------------------------------------------------------------
-#include <cub/cub.cuh>
 #include <iomanip>
 
 #include "caffe/FRCNN/frcnn_proposal_layer.hpp"
